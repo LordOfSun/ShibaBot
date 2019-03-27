@@ -9,7 +9,6 @@ const { LuisRecognizer } = require('botbuilder-ai');
 const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
 
 const { UserProfile } = require('./dialogs/greeting/userProfile');
-const { WelcomeCard } = require('./dialogs/welcome');
 const { GreetingDialog } = require('./dialogs/greeting');
 
 // Greeting Dialog ID
@@ -24,20 +23,16 @@ const LUIS_CONFIGURATION = 'BasicBotLuisApplication';
 
 // Supported LUIS Intents.
 const GREETING_INTENT = 'Greeting';
-const CANCEL_INTENT = 'Cancel';
+const STATUS_INTENT = 'Status';
+const PR_INTENT = 'PullRequest';
 const HELP_INTENT = 'Help';
+const CANCEL_INTENT = 'Cancel'
 const NONE_INTENT = 'None';
-
-// Supported LUIS Entities, defined in ./dialogs/greeting/resources/greeting.lu
-const USER_NAME_ENTITIES = ['userName', 'userName_patternAny'];
-const USER_LOCATION_ENTITIES = ['userLocation', 'userLocation_patternAny'];
 
 /**
  * Demonstrates the following concepts:
  *  Displaying a Welcome Card, using Adaptive Card technology
- *  Use LUIS to model Greetings, Help, and Cancel interactions
- *  Use a Waterfall dialog to model multi-turn conversation flow
- *  Use custom prompts to validate user input
+ *  Use LUIS to model Greetings, Status, PullRequest, and Help intents
  *  Store conversation and user state
  *  Handle conversation interruptions
  */
@@ -65,7 +60,6 @@ class BasicBot {
         this.luisRecognizer = new LuisRecognizer({
             applicationId: luisConfig.appId,
             endpoint: luisEndpoint,
-            // CAUTION: Its better to assign and use a subscription key instead of authoring key here.
             endpointKey: luisConfig.authoringKey
         });
 
@@ -94,7 +88,7 @@ class BasicBot {
     async onTurn(context) {
         // Handle Message activity type, which is the main activity type for shown within a conversational interface
         // Message activities may contain text, speech, interactive cards, and binary or unknown attachments.
-        // see https://aka.ms/about-bot-activity-message to learn more about the message and other activity types
+        // See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types
         if (context.activity.type === ActivityTypes.Message) {
             let dialogResult;
             // Create a dialog context
@@ -104,17 +98,20 @@ class BasicBot {
             const results = await this.luisRecognizer.recognize(context);
             const topIntent = LuisRecognizer.topIntent(results);
 
-            // update user profile property with any entities captured by LUIS
-            // This could be user responding with their name or city while we are in the middle of greeting dialog,
+            // Update user profile property with any entities captured by LUIS
+            // This could be user responding with their name or role while we are in the middle of greeting dialog,
             // or user saying something like 'i'm {userName}' while we have no active multi-turn dialog.
             await this.updateUserProfile(results, context);
+
+            // Fetch current user profile
+            let userProfile = await this.userProfileAccessor.get(context);
 
             // Based on LUIS topIntent, evaluate if we have an interruption.
             // Interruption here refers to user looking for help/ cancel existing dialog
             const interrupted = await this.isTurnInterrupted(dc, results);
             if (interrupted) {
                 if (dc.activeDialog !== undefined) {
-                    // issue a re-prompt on the active dialog
+                    // Issue a re-prompt on the active dialog
                     dialogResult = await dc.repromptDialog();
                 } // Else: We dont have an active dialog so nothing to continue here.
             } else {
@@ -137,7 +134,7 @@ class BasicBot {
                             default:
                                 // None or no intent identified, either way, let's provide some help
                                 // to the user
-                                await dc.context.sendActivity(`I didn't understand what you just said to me.`);
+                                await dc.context.sendActivity(`Hi ${ userProfile.name }, with role ${ userProfile.role }, nice to meet you!`);
                                 break;
                             }
                         break;
@@ -151,29 +148,6 @@ class BasicBot {
                         // Unrecognized status from child dialog. Cancel all dialogs.
                         await dc.cancelAllDialogs();
                         break;
-                }
-            }
-        } else if (context.activity.type === ActivityTypes.ConversationUpdate) {
-            // Handle ConversationUpdate activity type, which is used to indicates new members add to
-            // the conversation.
-            // see https://aka.ms/about-bot-activity-message to learn more about the message and other activity types
-
-            // Do we have any new members added to the conversation?
-            if (context.activity.membersAdded.length !== 0) {
-                // Iterate over all new members added to the conversation
-                for (var idx in context.activity.membersAdded) {
-                    // Greet anyone that was not the target (recipient) of this message
-                    // the 'bot' is the recipient for events from the channel,
-                    // context.activity.membersAdded == context.activity.recipient.Id indicates the
-                    // bot was added to the conversation.
-                    if (context.activity.membersAdded[idx].id !== context.activity.recipient.id) {
-                        // Welcome user.
-                        // When activity type is "conversationUpdate" and the member joining the conversation is the bot
-                        // we will send our Welcome Adaptive Card.  This will only be sent once, when the Bot joins conversation
-                        // To learn more about Adaptive Cards, see https://aka.ms/msbot-adaptivecards for more details.
-                        const welcomeCard = CardFactory.adaptiveCard(WelcomeCard);
-                        await context.sendActivity({ attachments: [welcomeCard] });
-                    }
                 }
             }
         }
@@ -235,11 +209,11 @@ class BasicBot {
                     userProfile.name = lowerCaseName.charAt(0).toUpperCase() + lowerCaseName.substr(1);
                 }
             });
-            USER_LOCATION_ENTITIES.forEach(city => {
-                if (luisResult.entities[city] !== undefined) {
-                    let lowerCaseCity = luisResult.entities[city][0];
+            USER_ROLE_ENTITIES.forEach(role => {
+                if (luisResult.entities[role] !== undefined) {
+                    let lowerCaseRole = luisResult.entities[role][0];
                     // capitalize and set user name
-                    userProfile.city = lowerCaseCity.charAt(0).toUpperCase() + lowerCaseCity.substr(1);
+                    userProfile.role = lowerCaseRole.charAt(0).toUpperCase() + lowerCaseRole.substr(1);
                 }
             });
             // set the new values

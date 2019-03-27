@@ -5,9 +5,10 @@
  * Simple user profile class.
  */
 class UserProfile {
-    constructor(name, city) {
+    constructor(name, role) {
         this.name = name || undefined;
-        this.city = city || undefined;
+        this.role = role || undefined;
+
     }
 };
 
