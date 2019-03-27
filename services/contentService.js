@@ -10,7 +10,7 @@ const baseURL = env('BASE_URL')
 const contentURL = urlJoin(baseURL, '/content')
 
 module.exports = {
-  getContent (userId, intent, body) {
+  getContent (userId, intent, body={}) {
     body.userId = userId;
     body.intent = intent
 
