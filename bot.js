@@ -26,7 +26,7 @@ const GREETING_INTENT = 'Greeting';
 const STATUS_INTENT = 'Status';
 const PR_INTENT = 'PullRequest';
 const HELP_INTENT = 'Help';
-const CANCEL_INTENT = 'Cancel'
+const CANCEL_INTENT = 'Cancel';
 const NONE_INTENT = 'None';
 
 /**
@@ -130,11 +130,26 @@ class BasicBot {
                             case GREETING_INTENT:
                                 await dc.beginDialog(GREETING_DIALOG);
                                 break;
+                            case STATUS_INTENT:
+                                await dc.context.sendActivity('Bark Bark Bark! (Retreiving your current status...)')
+                                
+                                // TODO: Replace with result adaptive card here
+                                await dc.context.sendActivity('Done!')
+                                break;
+                            case PR_INTENT:
+                                await dc.context.sendActivity('Woof Woof! (Fetching list of open PR\'s for you to review...)')
+
+                                // TODO: Replace with result adaptive card here
+                                await dc.context.sendActivity('Done!') 
+                                break;
+                            case HELP_INTENT:
+                                await dc.context.sendActivity('Bark Bark! Hi there, my name is ShibaBot. My aim is to help improve your day to day activities by working with Agile tools to keep you up to date on your projects. Here are some actions I can do for you:\n\n- Get the current status of your projects in JIRA. (Type status)\n\n- Alert you to all pull requests that are currently open on BitBucket for your review. (Type pull request)')
+                                break;
                             case NONE_INTENT:
                             default:
                                 // None or no intent identified, either way, let's provide some help
                                 // to the user
-                                await dc.context.sendActivity(`Hi ${ userProfile.name }, with role ${ userProfile.role }, nice to meet you!`);
+                                await dc.context.sendActivity('Woof? (I don\'t know that trick...)');
                                 break;
                             }
                         break;
@@ -179,11 +194,6 @@ class BasicBot {
             return true; // this is an interruption
         }
 
-        if (topIntent === HELP_INTENT) {
-            await dc.context.sendActivity(`Let me try to provide some help.`);
-            await dc.context.sendActivity(`I understand greetings, being asked for help, or being asked to cancel what I am doing.`);
-            return true; // this is an interruption
-        }
         return false; // this is not an interruption
     }
 
