@@ -97,6 +97,10 @@ class BasicBot {
             // Create a dialog context
             const dc = await this.dialogs.createContext(context);
 
+            if (context.activity.value != null && context.activity.value.x == "alert") {
+                await dc.context.sendActivity('Unleashing the puppies')
+            }
+            
             // Perform a call to LUIS to retrieve results for the current activity message.
             const results = await this.luisRecognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(results);
