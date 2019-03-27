@@ -45,6 +45,7 @@ class Greeting extends ComponentDialog {
         this.addDialog(new WaterfallDialog(PROFILE_DIALOG, [
             this.initializeStateStep.bind(this),
             this.promptForNameStep.bind(this),
+            this.saveUser.bind(this),
             this.greetUser.bind(this)
         ]));
 
@@ -110,16 +111,29 @@ class Greeting extends ComponentDialog {
         }
     }
     /**
+     * Waterfall Dialog step functions.
+     *
+     * Save the user object to the cache.
+     *
+     * @param {WaterfallStepContext} step contextual information for the current step being executed
+     */
+    async saveUser(step) {
+        const userProfile = await this.userProfileAccessor.get(step.context);
+        if (userProfile.name === undefined && step.result) {
+            let lowerCaseName = step.result;
+            // capitalize and set name
+            userProfile.name = lowerCaseName.charAt(0).toUpperCase() + lowerCaseName.substr(1);
+            await this.userProfileAccessor.set(step.context, userProfile);
+        }
+        return step.next()
+    }
+    /**
      * Helper function to greet user with information in greetingState.
      *
      * @param {WaterfallStepContext} step contextual information for the current step being executed
      */
     async greetUser(step) {
         let userProfile = await this.userProfileAccessor.get(step.context);
-        let lowerCaseName = step.result;
-        // Capitalize and set name
-        userProfile.name = lowerCaseName.charAt(0).toUpperCase() + lowerCaseName.substr(1);
-        await this.userProfileAccessor.set(step.context, userProfile);
         // Display to the user their profile information and end dialog
         await step.context.sendActivity(`Hi ${ userProfile.name }, nice to meet you! Bark bark!`);
         await step.context.sendActivity(`To see a list of commands, type help.`);
