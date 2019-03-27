@@ -100,7 +100,7 @@ class BasicBot {
             if (context.activity.value != null && context.activity.value.x == "alert") {
                 await dc.context.sendActivity('Unleashing the puppies')
             }
-            
+
             // Perform a call to LUIS to retrieve results for the current activity message.
             const results = await this.luisRecognizer.recognize(context);
             var topIntent = LuisRecognizer.topIntent(results);
@@ -158,7 +158,7 @@ class BasicBot {
                                 break;
                             case NONE_INTENT:
                                 networkResult = await contentService.getContent(userProfile.name, topIntent, {question: context.activity.text})
-                                await context.sendActivity('Arf! Arf! ' + networkResult.answer);
+                                await context.sendActivity('Arf! Arf!\n' + networkResult.answer);
                                 break;
                             default:
                                 // None or no intent identified, either way, let's provide some help
