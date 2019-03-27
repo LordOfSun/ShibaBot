@@ -1,23 +1,8 @@
-# Basic Bot template
+# Shiba Bot
 
-This bot has been created using [Microsoft Bot Framework](https://dev.botframework.com),
+This bot has been created using [Microsoft Bot Framework](https://dev.botframework.com).
 
-This samples shows how to:
-- Use [LUIS](https://luis.ai) to implement core AI capabilities
-- Implement a multi-turn conversation using Dialogs
-- Handle user interruptions for such things as Help or Cancel
-- Prompt for and validate requests for information from the user
-
-# Prerequisite to run this bot locally
-- Download the bot code from the Build blade in the Azure Portal
-- Create a file called .env in the root of the project and add the botFilePath and botFileSecret to it
-  - You can find the botFilePath and botFileSecret in the Azure App Service application settings
-  - Your .env file should look like this
-    ```bash
-    botFilePath=<copy value from App settings>
-    botFileSecret=<copy value from App settings>
-    ```
-
+# Prerequisites to run this bot locally
 - Run `npm install` in the root of the bot project
 - Finally run `npm start` 
 
@@ -66,13 +51,5 @@ Update `.env` with the appropriate keys botFilePath and botFileSecret.
 ### Running the bot
 
 ```
-node ./index.js
+npm run start
 ```
-### Developing the bot
-
-```
-nodemon ./index.js
-```
-
-
-
