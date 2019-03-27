@@ -5,10 +5,8 @@
  * Simple user profile class.
  */
 class UserProfile {
-    constructor(name, role) {
+    constructor(name) {
         this.name = name || undefined;
-        this.role = role || undefined;
-
     }
 };
 

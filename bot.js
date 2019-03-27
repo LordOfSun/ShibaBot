@@ -102,16 +102,13 @@ class BasicBot {
             var topIntent = LuisRecognizer.topIntent(results);
 
             // Update user profile property with any entities captured by LUIS
-            // This could be user responding with their name or role while we are in the middle of greeting dialog,
+            // This could be user responding with their name while we are in the middle of greeting dialog,
             // or user saying something like 'i'm {userName}' while we have no active multi-turn dialog.
             await this.updateUserProfile(results, context);
 
             // Fetch current user profile
             let userProfile = await this.userProfileAccessor.get(context);
-            if (userProfile === undefined) {
-                topIntent = GREETING_INTENT
-            }
-
+            
             // Based on LUIS topIntent, evaluate if we have an interruption.
             // Interruption here refers to user looking for help/ cancel existing dialog
             const interrupted = await this.isTurnInterrupted(dc, results);
@@ -125,8 +122,13 @@ class BasicBot {
                 dialogResult = await dc.continueDialog();
             }
 
+            let networkResult;
             // If no active dialog or no active dialog has responded,
             if (!dc.context.responded) {
+                if (userProfile === undefined) {
+                    await context.sendActivity('Woof woof! Hi I\'m ShibaBot! I\'ll be your personal Scrum assistant!');
+                    topIntent = GREETING_INTENT
+                }
                 // Switch on return results from any active dialog.
                 switch (dialogResult.status) {
                     // dc.continueDialog() returns DialogTurnStatus.empty if there are no active dialogs
@@ -143,8 +145,7 @@ class BasicBot {
                                 } else {
                                     await dc.context.sendActivity('Woof Woof! (Fetching list of open PR\'s for you to review...)')
                                 }
-
-                                const networkResult = await contentService.getContent(userProfile.name, topIntent)
+                                networkResult = await contentService.getContent(userProfile.name, topIntent)
                                 const resultCard = CardFactory.adaptiveCard(networkResult);
                                 await context.sendActivity({ attachments: [resultCard] });
                                 break;
@@ -152,6 +153,9 @@ class BasicBot {
                                 await dc.context.sendActivity('Bark Bark! Hi there, my name is ShibaBot. My aim is to help improve your day to day activities by working with Agile tools to keep you up to date on your projects. Here are some actions I can do for you:\n\n- Get the current status of your projects in JIRA. (Type status)\n\n- Alert you to all pull requests that are currently open on BitBucket for your review. (Type pull request)')
                                 break;
                             case NONE_INTENT:
+                                networkResult = await contentService.getContent(userProfile.name, topIntent, {question: context.activity.text})
+                                await context.sendActivity('Arf! Arf! ' + networkResult.answer);
+                                break;
                             default:
                                 // None or no intent identified, either way, let's provide some help
                                 // to the user
@@ -223,13 +227,6 @@ class BasicBot {
                     let lowerCaseName = luisResult.entities[name][0];
                     // capitalize and set user name
                     userProfile.name = lowerCaseName.charAt(0).toUpperCase() + lowerCaseName.substr(1);
-                }
-            });
-            USER_ROLE_ENTITIES.forEach(role => {
-                if (luisResult.entities[role] !== undefined) {
-                    let lowerCaseRole = luisResult.entities[role][0];
-                    // capitalize and set user name
-                    userProfile.role = lowerCaseRole.charAt(0).toUpperCase() + lowerCaseRole.substr(1);
                 }
             });
             // set the new values
