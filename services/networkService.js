@@ -1,5 +1,5 @@
 const request = require('request-promise')
-const http = require('http')
+const http = require('../utilities/http')
 
 module.exports = {
   /**
