@@ -11,6 +11,9 @@ const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
 const { UserProfile } = require('./dialogs/greeting/userProfile');
 const { GreetingDialog } = require('./dialogs/greeting');
 
+//Import required for networking
+const contentService = require('./services/contentService')
+
 // Greeting Dialog ID
 const GREETING_DIALOG = 'greetingDialog';
 
@@ -96,7 +99,7 @@ class BasicBot {
 
             // Perform a call to LUIS to retrieve results for the current activity message.
             const results = await this.luisRecognizer.recognize(context);
-            const topIntent = LuisRecognizer.topIntent(results);
+            var topIntent = LuisRecognizer.topIntent(results);
 
             // Update user profile property with any entities captured by LUIS
             // This could be user responding with their name or role while we are in the middle of greeting dialog,
@@ -105,6 +108,9 @@ class BasicBot {
 
             // Fetch current user profile
             let userProfile = await this.userProfileAccessor.get(context);
+            if (userProfile === undefined) {
+                topIntent = GREETING_INTENT
+            }
 
             // Based on LUIS topIntent, evaluate if we have an interruption.
             // Interruption here refers to user looking for help/ cancel existing dialog
@@ -131,16 +137,16 @@ class BasicBot {
                                 await dc.beginDialog(GREETING_DIALOG);
                                 break;
                             case STATUS_INTENT:
-                                await dc.context.sendActivity('Bark Bark Bark! (Retreiving your current status...)')
-                                
-                                // TODO: Replace with result adaptive card here
-                                await dc.context.sendActivity('Done!')
-                                break;
                             case PR_INTENT:
-                                await dc.context.sendActivity('Woof Woof! (Fetching list of open PR\'s for you to review...)')
+                                if (topIntent === STATUS_INTENT) {
+                                    await dc.context.sendActivity('Bark Bark Bark! (Retreiving your current status...)')
+                                } else {
+                                    await dc.context.sendActivity('Woof Woof! (Fetching list of open PR\'s for you to review...)')
+                                }
 
-                                // TODO: Replace with result adaptive card here
-                                await dc.context.sendActivity('Done!') 
+                                const networkResult = await contentService.getContent(userProfile.name, topIntent)
+                                const resultCard = CardFactory.adaptiveCard(networkResult);
+                                await context.sendActivity({ attachments: [resultCard] });
                                 break;
                             case HELP_INTENT:
                                 await dc.context.sendActivity('Bark Bark! Hi there, my name is ShibaBot. My aim is to help improve your day to day activities by working with Agile tools to keep you up to date on your projects. Here are some actions I can do for you:\n\n- Get the current status of your projects in JIRA. (Type status)\n\n- Alert you to all pull requests that are currently open on BitBucket for your review. (Type pull request)')

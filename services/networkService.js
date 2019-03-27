@@ -20,10 +20,8 @@ module.exports = {
       json: true
     }
 
-    if (method !== http.GET) {
-      options['body'] = body
-      options['form'] = formData
-    }
+    options['body'] = body
+    options['form'] = formData
 
     return request(options).promise()
   }
